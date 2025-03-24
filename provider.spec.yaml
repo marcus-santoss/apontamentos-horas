@@ -21,6 +21,8 @@ clockify:
     task: ID DA TASK
     meet: ID DO MEET
 
+---
+
 jira:
   auth:
     Authorization: <API TOKEN>

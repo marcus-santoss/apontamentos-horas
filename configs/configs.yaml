@@ -1,0 +1,32 @@
+max_task_duration: 180
+minutes_per_day:
+  min: 360
+  max: 600
+
+pause:
+  min: 0
+  max: 30
+
+task_per_day:
+  min: 3
+  max: 10
+
+# Variação na inicialização de uma nova task
+task_variation:
+  min: 0
+  max: 20
+
+start_time_variation:
+  min: -60
+  max: 60
+
+lunch_variation:
+  min: -30
+  max: 60
+
+periods:
+  start_time: !time "09:00"
+  lunch_start: !time "12:00"
+  lunch_end: !time "14:00"
+  comercial_end: !time "18:00"
+  end_time: !time "21:00"

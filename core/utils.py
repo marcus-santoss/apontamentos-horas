@@ -1,107 +1,37 @@
-import abc
-import json
-from abc import ABC
 from datetime import datetime
+from pathlib import Path
 
-import pandas as pd
-import requests
-
-from core.config import get_configs
-from core.schedules import generate_schedule_with_descriptions
+import yaml
+from easydict import EasyDict as edict
 
 
-class Annotation(ABC):
-    def __init__(self, provider_name: str):
-        self.provider_name: str = provider_name
-        self.configs = get_configs("configs")
-        self.provider = get_configs("credentials")[provider_name]
-        self.annotations: list = []
+def datetime_constructor(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> datetime:
+    return datetime.strptime(node.value, "%H:%M")
 
-    @staticmethod
-    def get_dates():
-        first_day = datetime.today().replace(day=1)
-        last_day = datetime.today()
-        return first_day, last_day
 
-    @staticmethod
-    def report_error(description, resp):
-        print(f"Failed to register entry: {description}")
-        print(resp.text)
-        print(resp.reason)
-        print(resp.status_code)
+def get_loader():
+    loader = yaml.SafeLoader
+    loader.add_constructor("!time", datetime_constructor)
+    return loader
 
-    @staticmethod
-    def dumps(body: dict):
-        print(json.dumps(body, indent=2, ensure_ascii=False, default=str))
 
-    def get_entries(self, url=None):
-        url = url or self.provider.base_url
-        first, last = self.get_dates()
-        params = {
-            self.provider.params.start.key: first.strftime(self.provider.params.start.format),
-            self.provider.params.end.key: last.strftime(self.provider.params.start.format),
-            self.provider.params.limit.key: self.provider.params.limit.value
-        }
+def _read_file(file):
+    f = Path(file)
+    for _ in range(5):
+        if f.exists():
+            break
+        f = ".." / f
+    else:
+        raise FileNotFoundError(f"File not found: {file}")
 
-        resp = requests.get(url, headers=self.provider.auth, params=params)
-        if resp.ok:
-            return resp.json(), first, last
+    with open(file) as file:
+        data = yaml.load(file, Loader=get_loader())
+        return edict(data)
 
-        raise Exception(resp.reason)
 
-    @abc.abstractmethod
-    def time_entries(self) -> tuple:
-        raise NotImplementedError()
+def get_configs():
+    return _read_file(f"configs/configs.yaml")
 
-    @abc.abstractmethod
-    def registry_entry(
-            self, description: str, init_hour: str, current_date: str, end_hour: str, debug: bool = False
-    ) -> None:
-        raise NotImplementedError()
 
-    def report(self):
-        total = 0
-        print("=" * 100)
-        print(self.provider_name.upper())
-        print("=" * 100)
-        for entry in self.annotations:
-            spent_minutes = entry["spent"] / 60
-            not_is_ok = spent_minutes < self.configs.minutes_per_day["min"]
-            status = "Abaixo Min" if not_is_ok else "OK"
-            msg = f"[{status}] {entry['date']}: {entry['spent'] / 3600:.2f}h"
-            total += spent_minutes
-            print(msg)
-        print("-" * 100)
-        print("Tempo total: ", round(total / 60, 2))
-
-    def fill_annotations(self, debug=False):
-        entries, first, last = self.time_entries()
-
-        for d in pd.date_range(first, last):
-            if d.weekday() > 4:
-                continue
-
-            target_date = d.strftime("%Y-%m-%d")
-            action = "Registrando"
-            if target_date in entries:
-                spent = entries[target_date]
-                self.annotations.append({"date": target_date, "spent": spent})
-                if spent >= self.configs.minutes_per_day["min"]:
-                    continue
-
-                action = "Ajustando"
-
-            print("-" * 100)
-            print(f"{action} apontamentos para o dia: ", target_date)
-            print("-" * 100)
-            for entry in generate_schedule_with_descriptions():
-                print("Task: ", entry["description"], ": ", end="")
-                self.registry_entry(
-                    description=entry["description"],
-                    init_hour=entry["start"],
-                    current_date=target_date,
-                    end_hour=entry["end"],
-                    debug=debug
-                )
-
-        self.report()
+def get_provider(provider):
+    return _read_file(f"configs/providers/{provider}.yaml")

@@ -4,7 +4,7 @@ from typing import Literal
 
 import requests
 
-from core.utils import Annotation
+from core.annotations import Annotation
 
 
 class ClockifyAnnotation(Annotation):

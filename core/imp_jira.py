@@ -4,7 +4,7 @@ from datetime import datetime
 
 import requests
 
-from core.utils import Annotation
+from core.annotations import Annotation
 
 
 class JiraAnnotation(Annotation):
