@@ -1,13 +1,11 @@
 import abc
 import json
-from abc import ABC
-from datetime import datetime
-
 import pandas as pd
 import requests
-
+from abc import ABC
 from core.schedules import generate_schedule_with_descriptions
 from core.utils import get_configs, get_provider
+from datetime import datetime
 
 
 class Annotation(ABC):
@@ -74,7 +72,7 @@ class Annotation(ABC):
         print("-" * 100)
         print("Tempo total: ", round(total / 60, 2))
 
-    def fill_annotations(self, debug=False):
+    def fill_annotations(self, debug=False, black_list=None):
         entries, first, last = self.time_entries()
 
         for d in pd.date_range(first, last):
@@ -82,6 +80,10 @@ class Annotation(ABC):
                 continue
 
             target_date = d.strftime("%Y-%m-%d")
+            if target_date in black_list:
+                print(f"O dia {target_date} foi pulado pois está na black list")
+                continue
+
             action = "Registrando"
             if target_date in entries:
                 spent = entries[target_date]

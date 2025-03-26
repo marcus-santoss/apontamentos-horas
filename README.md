@@ -50,7 +50,7 @@ pip install -r requirements.txt
 Depois dissos, basta rodar o 'script' com o comando:
 
 ```bash
-python make_annotations.py
+python app.py
 ```
 
 Ainda dá pra fazer coisas bem legais tipo criar uma imagem Docker e rodar o 'script' em um container todos os dias as
