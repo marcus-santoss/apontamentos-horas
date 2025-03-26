@@ -5,7 +5,9 @@ import yaml
 from easydict import EasyDict as edict
 
 
-def datetime_constructor(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> datetime:
+def datetime_constructor(
+    loader: yaml.SafeLoader, node: yaml.nodes.MappingNode
+) -> datetime:
     return datetime.strptime(node.value, "%H:%M")
 
 

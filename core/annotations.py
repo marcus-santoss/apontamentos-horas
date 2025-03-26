@@ -1,11 +1,14 @@
 import abc
 import json
+from abc import ABC
+from datetime import datetime
+from functools import cached_property
+
 import pandas as pd
 import requests
-from abc import ABC
+
 from core.schedules import generate_schedule_with_descriptions
 from core.utils import get_configs, get_provider
-from datetime import datetime
 
 
 class Annotation(ABC):
@@ -14,6 +17,13 @@ class Annotation(ABC):
         self.configs = get_configs()
         self.provider = get_provider(provider_name)
         self.annotations: list = []
+
+    @cached_property
+    def feriados(self):
+        resp = requests.get(
+            f"https://brasilapi.com.br/api/feriados/v1/{datetime.today().year}"
+        )
+        return {d["date"]: d["name"] for d in resp.json()}
 
     @staticmethod
     def get_dates():
@@ -36,9 +46,13 @@ class Annotation(ABC):
         url = url or self.provider.base_url
         first, last = self.get_dates()
         params = {
-            self.provider.params.start.key: first.strftime(self.provider.params.start.format),
-            self.provider.params.end.key: last.strftime(self.provider.params.start.format),
-            self.provider.params.limit.key: self.provider.params.limit.value
+            self.provider.params.start.key: first.strftime(
+                self.provider.params.start.format
+            ),
+            self.provider.params.end.key: last.strftime(
+                self.provider.params.start.format
+            ),
+            self.provider.params.limit.key: self.provider.params.limit.value,
         }
 
         resp = requests.get(url, headers=self.provider.auth, params=params)
@@ -53,7 +67,12 @@ class Annotation(ABC):
 
     @abc.abstractmethod
     def registry_entry(
-            self, description: str, init_hour: str, current_date: str, end_hour: str, debug: bool = False
+        self,
+        description: str,
+        init_hour: str,
+        current_date: str,
+        end_hour: str,
+        debug: bool = False,
     ) -> None:
         raise NotImplementedError()
 
@@ -80,6 +99,10 @@ class Annotation(ABC):
                 continue
 
             target_date = d.strftime("%Y-%m-%d")
+            if target_date in self.feriados:
+                print(f"O dia {target_date} é feriado: {self.feriados[target_date]}")
+                continue
+
             if target_date in black_list:
                 print(f"O dia {target_date} foi pulado pois está na black list")
                 continue
@@ -96,14 +119,16 @@ class Annotation(ABC):
             print("-" * 100)
             print(f"{action} apontamentos para o dia: ", target_date)
             print("-" * 100)
-            for entry in generate_schedule_with_descriptions(self.provider.common_tasks):
+            for entry in generate_schedule_with_descriptions(
+                self.provider.common_tasks
+            ):
                 print("Task: ", entry["description"], ": ", end="")
                 self.registry_entry(
                     description=entry["description"],
                     init_hour=entry["start"],
                     current_date=target_date,
                     end_hour=entry["end"],
-                    debug=debug
+                    debug=debug,
                 )
 
         self.report()

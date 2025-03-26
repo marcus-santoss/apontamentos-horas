@@ -24,12 +24,12 @@ class JiraAnnotation(Annotation):
         return times, first, last
 
     def registry_entry(
-            self,
-            description,
-            init_hour: str,
-            end_hour: str,
-            current_date: str,
-            debug: bool = False
+        self,
+        description,
+        init_hour: str,
+        end_hour: str,
+        current_date: str,
+        debug: bool = False,
     ):
         to_datetime = lambda x: datetime.strptime(x, "%H:%M")
         spent = to_datetime(end_hour) - to_datetime(init_hour)
@@ -39,13 +39,15 @@ class JiraAnnotation(Annotation):
             "issueId": self.provider.issue_id,
             "startDate": current_date,
             "startTime": f"{init_hour}:{random.randint(10, 59)}",
-            "timeSpentSeconds": spent.total_seconds()
+            "timeSpentSeconds": spent.total_seconds(),
         }
         if debug:
             self.dumps(body)
             return
 
-        resp = requests.post(self.provider.base_url, headers=self.provider.auth, json=body)
+        resp = requests.post(
+            self.provider.base_url, headers=self.provider.auth, json=body
+        )
         if resp.status_code < 300:
             print("OK")
         else:
