@@ -11,9 +11,9 @@ class JiraAnnotation(Annotation):
     def __init__(self):
         super().__init__("jira")
 
-    def time_entries(self):
+    def time_entries(self, start_date: str = None, end_date: str = None):
         times = {}
-        data, first, last = self.get_entries()
+        data, first, last = self.get_entries(start_date, end_date)
         for d in data["results"]:
             dt = d["startDate"]
             if dt not in times:

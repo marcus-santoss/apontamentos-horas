@@ -42,9 +42,12 @@ class Annotation(ABC):
     def dumps(body: dict):
         print(json.dumps(body, indent=2, ensure_ascii=False, default=str))
 
-    def get_entries(self, url=None):
+    def get_entries(self, first, last, url=None):
         url = url or self.provider.base_url
-        first, last = self.get_dates()
+
+        if not all((first, last)):
+            first, last = self.get_dates()
+
         params = {
             self.provider.params.start.key: first.strftime(
                 self.provider.params.start.format
@@ -62,17 +65,17 @@ class Annotation(ABC):
         raise Exception(resp.reason)
 
     @abc.abstractmethod
-    def time_entries(self) -> tuple:
+    def time_entries(self, start_date: str | None, end_date: str | None) -> tuple:
         raise NotImplementedError()
 
     @abc.abstractmethod
     def registry_entry(
-        self,
-        description: str,
-        init_hour: str,
-        current_date: str,
-        end_hour: str,
-        debug: bool = False,
+            self,
+            description: str,
+            init_hour: str,
+            current_date: str,
+            end_hour: str,
+            debug: bool = False,
     ) -> None:
         raise NotImplementedError()
 
@@ -91,8 +94,8 @@ class Annotation(ABC):
         print("-" * 100)
         print("Tempo total: ", round(total / 60, 2))
 
-    def fill_annotations(self, debug=False, black_list=None):
-        entries, first, last = self.time_entries()
+    def fill_annotations(self, args):
+        entries, first, last = self.time_entries(args.start_date, args.end_date)
 
         for d in pd.date_range(first, last):
             if d.weekday() > 4:
@@ -103,7 +106,7 @@ class Annotation(ABC):
                 print(f"O dia {target_date} é feriado: {self.feriados[target_date]}")
                 continue
 
-            if target_date in black_list:
+            if target_date in args.blacklist:
                 print(f"O dia {target_date} foi pulado pois está na black list")
                 continue
 
@@ -120,7 +123,7 @@ class Annotation(ABC):
             print(f"{action} apontamentos para o dia: ", target_date)
             print("-" * 100)
             for entry in generate_schedule_with_descriptions(
-                self.provider.common_tasks
+                    self.provider.common_tasks
             ):
                 print("Task: ", entry["description"], ": ", end="")
                 self.registry_entry(
@@ -128,7 +131,7 @@ class Annotation(ABC):
                     init_hour=entry["start"],
                     current_date=target_date,
                     end_hour=entry["end"],
-                    debug=debug,
+                    debug=args.debug,
                 )
 
         self.report()

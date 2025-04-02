@@ -17,16 +17,16 @@ class ClockifyAnnotation(Annotation):
         dt1 = int(dt[0]) + 3
         return f"{dt1}:{dt[1]}"
 
-    def time_entries(self) -> tuple:
+    def time_entries(self, start_date: str = None, end_date: str = None):
         times = {}
         to_datetime = lambda x: datetime.strptime(x, "%Y-%m-%dT%H:%M:%SZ")
-
         url = "{url}/api/v1/workspaces/{workspace}/user/{user}/time-entries".format(
             url=self.provider.base_url,
             workspace=self.provider.workspace_id,
             user=self.provider.user_id,
         )
-        data, first, last = self.get_entries(url)
+        data, first, last = self.get_entries(start_date, end_date, url)
+
 
         for d in data:
             dt = d["timeInterval"]["start"].split("T")[0]

@@ -1,8 +1,5 @@
 import random
-from core.utils import get_configs
 from datetime import timedelta
-
-configs = get_configs()
 
 
 def get_value(prop):
@@ -14,6 +11,8 @@ def get_timedelta_value(prop):
 
 
 def get_lunch_end_time(current_time):
+    from core.utils import get_configs
+    configs = get_configs()
     if configs.periods.lunch_start <= current_time < configs.periods.lunch_end:
         current_time = configs.periods.lunch_end + get_timedelta_value(
             configs.lunch_variation
@@ -22,6 +21,9 @@ def get_lunch_end_time(current_time):
 
 
 def generate_schedule_with_descriptions(tasks: list):
+    from core.utils import get_configs
+    configs = get_configs()
+
     annotations = []
     common_tasks = tasks[:]  # Faz uma cópia para evitar alterações
     task_num = get_value(configs.task_per_day)
@@ -54,8 +56,8 @@ def generate_schedule_with_descriptions(tasks: list):
 
         # Não atribui tasks de estudo e tempo disponivel depois do horário comercial
         if "Tempo" in description and (
-            current_time >= configs.periods.comercial_end
-            or task_end_time >= configs.periods.comercial_end
+                current_time >= configs.periods.comercial_end
+                or task_end_time >= configs.periods.comercial_end
         ):
             continue
 
